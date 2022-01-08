@@ -53,11 +53,23 @@ def _execute(filters=None, additional_table_columns=None, additional_query_colum
 			for col in additional_query_columns:
 				row.append(inv.get(col))
 
+		pur_order_amount = ''
+		if purchase_order:
+			query = """select sum(grand_total) as total 
+								from `tabPurchase Order` 
+								where docstatus = 1"""
+			if len(purchase_order) > 1:
+				query += " and name in {0}".format(tuple(inv for inv in purchase_order))
+			else:
+				query += " and name = '{0}'".format(purchase_order[0])
+
+			pur_order_amount = float(frappe.db.sql(query)[0][0] or 0)
+
 		row += [
 			supplier_details.get(inv.supplier), # supplier_group
 			inv.tax_id, inv.credit_to, inv.mode_of_payment, ", ".join(project),
 			inv.bill_no, inv.bill_date, inv.remarks,
-			", ".join(purchase_order), ", ".join(purchase_receipt), ", ".join(payment_entry), ", ".join(paid_amount), company_currency
+			", ".join(purchase_order), pur_order_amount, ", ".join(purchase_receipt), ", ".join(payment_entry), float(paid_amount[0]) if paid_amount else '', company_currency
 		]
 
 		# map expense values
@@ -105,8 +117,9 @@ def get_columns(invoice_list, additional_table_columns):
 		_("Supplier Group") + ":Link/Supplier Group:120", _("Tax Id") + "::80", _("Payable Account") + ":Link/Account:120",
 		_("Mode of Payment") + ":Link/Mode of Payment:80", _("Project") + ":Link/Project:80",
 		_("Bill No") + "::120", _("Bill Date") + ":Date:80", _("Remarks") + "::150",
-		_("Purchase Order") + ":Link/Purchase Order:100",
-		_("Purchase Receipt") + ":Link/Purchase Receipt:100",
+		_("Purchase Order") + ":Link/Purchase Order:180",
+		_("Purchase Order Amt") + ":Currency:180",
+		_("Purchase Receipt") + ":Link/Purchase Receipt:150",
 		_("Payment Entry") + ":Link/Payment Entry:250",
 		_("Total Paid Amount") + ":Currency:150",
 		{
@@ -294,9 +307,11 @@ def get_invoice_po_pr_map(invoice_list):
 	return invoice_po_pr_map
 
 def get_invoice_pe_map(invoice_list):
-	payment_entry = frappe.db.sql("""select distinct parent as py_entry, reference_name as purchase_invoice
-			from `tabPayment Entry Reference` where reference_name in (%s) 
-			and reference_doctype ='Purchase Invoice' and docstatus =1""" %
+	payment_entry = frappe.db.sql("""select distinct pr.parent as py_entry, pr.reference_name as purchase_invoice
+			from `tabPayment Entry Reference` pr
+			inner join `tabPayment Entry` as p on p.name = pr.parent
+			where pr.reference_name in (%s) 
+			and pr.reference_doctype ='Purchase Invoice' and p.docstatus =1""" %
 			', '.join(['%s'] * len(invoice_list)), tuple(inv.name for inv in invoice_list), as_dict=1)
 
 	invoice_pe_map = {}
@@ -309,13 +324,13 @@ def get_invoice_pe_map(invoice_list):
 
 def get_invoice_pe_amt(invoice_list):
 
-	payment_entry = frappe.db.sql("""select distinct sum(p.paid_amount) as paid_amount, 
+	payment_entry = frappe.db.sql("""select distinct sum(pr.allocated_amount) as paid_amount, 
 		pr.reference_name as purchase_invoice
 		from `tabPayment Entry Reference` pr
 		inner join `tabPayment Entry` as p on p.name = pr.parent 
 		where pr.reference_name in (%s) 
 		and pr.reference_doctype ='Purchase Invoice' 
-		and pr.docstatus = 1 
+		and p.docstatus = 1 
 		group by pr.reference_name""" %
 		', '.join(['%s'] * len(invoice_list)), tuple(inv.name for inv in invoice_list), as_dict=1)
 

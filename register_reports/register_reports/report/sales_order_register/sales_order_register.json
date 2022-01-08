@@ -1,7 +1,7 @@
 {
  "add_total_row": 1,
  "columns": [],
- "creation": "2022-01-07 22:36:01.903555",
+ "creation": "2022-01-08 12:08:06.828500",
  "disable_prepared_report": 1,
  "disabled": 0,
  "docstatus": 0,
@@ -9,36 +9,30 @@
  "filters": [],
  "idx": 0,
  "is_standard": "Yes",
- "modified": "2022-01-08 12:08:18.245120",
+ "modified": "2022-01-08 13:15:00.812650",
  "modified_by": "Administrator",
  "module": "Register Reports",
- "name": "Purchase Order Register",
+ "name": "Sales Order Register",
  "owner": "Administrator",
  "prepared_report": 0,
- "ref_doctype": "Purchase Invoice",
- "report_name": "Purchase Order Register",
+ "ref_doctype": "Sales Invoice",
+ "report_name": "Sales Order Register",
  "report_type": "Script Report",
  "roles": [
-  {
-   "role": "Purchase User"
-  },
-  {
-   "role": "Accounts User"
-  },
-  {
-   "role": "System Manager"
-  },
   {
    "role": "Accounts Manager"
   },
   {
-   "role": "Purchase Manager"
+   "role": "Accounts User"
   },
   {
    "role": "Sales Manager"
   },
   {
    "role": "Sales User"
+  },
+  {
+   "role": "System Manager"
   }
  ]
 }
